@@ -1,32 +1,23 @@
-@Grab('com.networknt:json-schema-validator:1.0.72')
-@Grab('com.fasterxml.jackson.core:jackson-databind:2.15.2')
-import com.networknt.schema.JsonSchema
-import com.networknt.schema.JsonSchemaFactory
-import com.networknt.schema.SpecVersion
-import com.networknt.schema.ValidationMessage
-import com.fasterxml.jackson.databind.JsonNode
-import com.fasterxml.jackson.databind.ObjectMapper
-
-private static def InputStream inputStreamFromClasspath(String path) {
-    return Thread.currentThread().getContextClassLoader().getResourceAsStream(path)
-}
+@GrabResolver(name = 'jitpack', root = 'https://jitpack.io/')
+@Grab('net.jimblackler.jsonschemafriend:core:0.11.4')
+import net.jimblackler.jsonschemafriend.Schema
+import net.jimblackler.jsonschemafriend.SchemaException
+import net.jimblackler.jsonschemafriend.SchemaStore
+import net.jimblackler.jsonschemafriend.Validator
 
 def validateJson(String jsonPath, String schemaPath) {
-    ObjectMapper objectMapper = new ObjectMapper()
-    def schemaFactory = JsonSchemaFactory.getInstance(SpecVersion.VersionFlag.V201909)
+    def schemaString = """{
+            "\$schema": "http://json-schema.org/draft-07/schema#",
+            "type": "integer"
+             }"""
 
-    try (
-            InputStream jsonStream = inputStreamFromClasspath(jsonPath);
-            InputStream schemaStream = inputStreamFromClasspath(schemaPath)
-    ) {
-        JsonNode json = objectMapper.readTree(jsonStream)
-        JsonSchema schema = schemaFactory.getSchema(schemaStream) as JsonSchema
-        Set<ValidationMessage> validationResult = schema.validate(json)
-
-        if (validationResult.isEmpty()) {
-            System.out.println("no validation errors :-)");
-        } else {
-            validationResult.forEach(vm -> System.out.println(vm.getMessage()));
-        }
+    try {
+        SchemaStore schemaStore = new SchemaStore()
+        Schema schema = schemaStore.loadSchemaJson(schemaString)
+        Validator validator = new Validator()
+        validator.validateJson(schema, "1")
+        validator.validateJson(schema, "true")
+    } catch (SchemaException e) {
+        return e.toString()
     }
 }
